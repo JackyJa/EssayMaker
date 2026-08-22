@@ -1,0 +1,26 @@
+{
+    "mcpServers": {
+        "tavily": {
+            "command": "npx",
+            "args": ["-y", "tavily-mcp@latest"],
+            "env": {
+                "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+            }
+        },
+
+        "duckduckgo": {
+            "command": "npx",
+            "args": ["-y", "duckduckgo-mcp-server"]
+        },
+
+        "fetch": {
+            "command": "uvx",
+            "args": ["mcp-server-fetch"]
+        },
+
+        "arxiv": {
+            "command": "uvx",
+            "args": ["arxiv-mcp-server"]
+        }
+    }
+}
