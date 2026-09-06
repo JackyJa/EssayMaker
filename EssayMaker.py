@@ -1,8 +1,25 @@
-from Agents import critic_agent , researcher_agent , writer_agent
+from Agents import critic_agent , researcher_agent , writer_agent , translator_agent
 import json
 import os
 import markdown
 from datetime import datetime
+import re
+
+
+
+def is_english(text: str) -> bool:
+   
+    letters = re.findall(r'[^\s\d\W]', text, re.UNICODE)
+
+    if not letters:
+        return True  
+
+    non_ascii_letters = [c for c in letters if ord(c) > 127]
+  
+    ratio_non_ascii = len(non_ascii_letters) / len(letters)
+
+    return ratio_non_ascii < 0.1 
+
 
 class EssayMaker:
 
@@ -48,6 +65,7 @@ class EssayMaker:
                 feedback_text = feedback["summary"] + "\n\n" + json.dumps(feedback["issues"], indent=2, ensure_ascii=False)
                 essay = self.writer.write(self.question, research, feedback_text)
 
+
         except Exception as e:
             print(f"Error: {e}")
             return None
@@ -68,32 +86,47 @@ except ValueError:
     print("Invalid number, defaulting to 3.\n")
     max_revision = 3
 
-FinalEssay = EssayAgent.run_pipeline(int(max_revision))
+FinalEssay = EssayAgent.run_pipeline(int(max_revision)) 
+    
 
 if FinalEssay is None:
     print("Pipeline failed, nothing to save.\n")
     exit()
 
+
 now = datetime.now()
 timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-filepath_md = f"Output{timestamp}/Essay.md"
-filepath_html = f"Output{timestamp}/Essay.html"
+output_dir = f"Output/{timestamp}"
+os.makedirs(output_dir, exist_ok=True)
 
-os.makedirs(os.path.dirname(filepath_md), exist_ok=True)
+filepath_md = f"{output_dir}/Essay.md"
+filepath_html = f"{output_dir}/Essay.html"
+
 with open(filepath_md, "w", encoding="utf-8") as f:
     f.write(FinalEssay)
-    print(f"✅ File {filepath_md} Was Created successfully.\n")
+print(f"✅ File {filepath_md} created.\n")
 
-try:
-    with open(filepath_md, 'r', encoding='utf-8') as md_file:
-        md_content = md_file.read()
+html_content = markdown.markdown(FinalEssay, extensions=['fenced_code', 'tables'])
+with open(filepath_html, 'w', encoding='utf-8') as f:
+    f.write(html_content)
+print(f"✅ File {filepath_html} created.\n")
 
-    html_content = markdown.markdown(md_content, extensions=['fenced_code', 'tables'])
+if not is_english(question):
+    try:
+        translator = translator_agent.TranslatorAgent("openai:gpt-4o-mini")
+        translated_essay = translator.translate(FinalEssay, question)
 
-    with open(filepath_html, 'w', encoding='utf-8') as html_file:
-        html_file.write(html_content)
+        filepath_md_tr = f"{output_dir}/Essay_Translated.md"
+        filepath_html_tr = f"{output_dir}/Essay_Translated.html"
 
-    print(f"✅ Converted '{filepath_md}' → '{filepath_html}' successfully.")
+        with open(filepath_md_tr, "w", encoding="utf-8") as f:
+            f.write(translated_essay)
+        print(f"✅ File {filepath_md_tr} created.\n")
 
-except Exception as e:
-    print(f"❌ Error: {e}")
+        html_translated = markdown.markdown(translated_essay, extensions=['fenced_code', 'tables'])
+        with open(filepath_html_tr, 'w', encoding='utf-8') as f:
+            f.write(html_translated)
+        print(f"✅ File {filepath_html_tr} created.\n")
+
+    except Exception as e:
+        print(f"❌ Translation error: {e}")

@@ -85,4 +85,7 @@ OUTPUT FORMAT (strict):
   and any other formatting — nothing custom or non-standard.
 - Your entire response must be valid, directly renderable Markdown, and
   nothing else.
+- Regardless of the language of the topic, research, or feedback provided,
+  always write the article in English. Never switch languages based on the
+  input language.
 """
